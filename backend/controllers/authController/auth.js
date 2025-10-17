@@ -344,18 +344,20 @@ const changePassword = async ( req, res ) =>{
             db.query('SELECT email FROM admins WHERE email = $1', [email]),
             db.query('SELECT email FROM customers WHERE email = $1', [email]),
         ])
-        const adminEmail = queryAdmin.rows.length > 0 ? queryAdmin.rows[0] : 'Unrecognized email'
-        const customerEmail = queryCustomer.rows.length > 0 ? queryCustomer.rows[0] : 'Unrecognized email'
-        
-        if ( email === adminEmail){
-            const cachedOTP = await redis.get(`updatedOtp:${email}`)
+        const isAdminEmail = queryAdmin.rows.length > 0 
+        const isCuustomerEmail = queryCustomer.rows.length > 0 
+
+        if( !isAdminEmail && !isCuustomerEmail) return res.status(404).json({message: 'Invalid email'})
+
+        const cachedOTP = await redis.get(`updatedOtp:${email}`)    
+        if( !cachedOTP ) return res.status(401).json({message:'OTP required'})
             
-            if( !cachedOTP ) return res.status(401).json({message:'OTP not found'})
-            const otpData = JSON.parse(cachedOTP)
-            if( email !== otpData.email ) return res.status(401).json({
-                message : 'Email mismatch'
-            })
-            const hashedPassword = await hash(newPassword)
+        const otpData = JSON.parse(cachedOTP)
+        if( email !== otpData.email ) return res.status(401).json({ message : 'Email mismatch'})
+        // hash new password
+        const hashedPassword = await hash(newPassword)
+        //update passworda
+        if( isAdminEmail) {
             await db.query(`
                 UPDATE admins
                 SET password_hash = $1
@@ -363,21 +365,13 @@ const changePassword = async ( req, res ) =>{
             )
             return res.status(201).json({message : 'Admin password updated'})
         }
-        if ( email === customerEmail){
-            const cachedOTP = await redis.get(`updatedOtp:${email}`)
-            
-            if( !cachedOTP ) return res.status(401).json({message:'OTP not found'})
-            const otpData = JSON.parse(cachedOTP)
-            if( email !== otpData.email ) return res.status(401).json({
-                message : 'Email mismatch'
-            })
-            const hashedPassword = await hash(newPassword)
+        if( isCuustomerEmail) {
             await db.query(`
                 UPDATE customers
                 SET password_hash = $1
                 WHERE email = $2`,[hashedPassword, email]
             )
-            return res.status(201).json({message : 'Password updated'})
+            return res.status(201).json({message : 'Admin password updated'})
         }
     }catch(err){
         console.log("Error changing password", err)
