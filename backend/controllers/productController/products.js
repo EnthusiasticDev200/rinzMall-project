@@ -7,8 +7,10 @@ const createProduct = async ( req, res )=>{
     try{
         const { category, productName, productSize, stockQuanity, price} = req.body
         const existingProduct = await db.query(` 
-            SELECT product_name, product_size FROM products WHERE product_name = $1`,
-            [productName])
+            SELECT product_name, product_size FROM products 
+                WHERE product_name = $1
+                AND product_size = $2`,
+            [productName, productSize])
         if ( existingProduct.rows.length > 0) return res.status(409).json({
             message : ' Product already exit'
         })
@@ -28,6 +30,21 @@ const createProduct = async ( req, res )=>{
 }
 
 
+const viewProducts = async ( req, res) =>{
+    try{
+        const getProducts = await db.query(` 
+            SELECT category, product_name, product_size, price
+            FROM products`)
+        const products = getProducts.rows
+        return res.status(200).json(products)
+    }catch(err){
+        console.log('Error displaying products', err)
+        return res.status(500).json({
+            message : 'Error displaying products',
+            error : err.stack
+        })
+    }
+}
 
 
 
@@ -35,4 +52,5 @@ const createProduct = async ( req, res )=>{
 
 
 
-export { createProduct}
+
+export { createProduct, viewProducts}

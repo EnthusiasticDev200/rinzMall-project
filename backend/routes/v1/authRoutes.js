@@ -4,7 +4,7 @@ import express from "express";
 import { signUpAdmin, signInAdmin, logoutAdmin, refreshTokens, 
     signUpCustomer, signInCustomer, logoutCustomer, sendOtp,
     verifyOtp, changePassword} 
-    from "../../controllers/auth/authController.js";
+    from "../../controllers/authController/auth.js";
 
 import { verifyAccessToken, verifyRefreshToken, requireSuperUser, 
     customerOnly
